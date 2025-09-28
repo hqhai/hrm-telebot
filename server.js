@@ -1,11 +1,177 @@
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
+const { ChartJSNodeCanvas } = require('chartjs-node-canvas');
+const fs = require('fs');
 
 // replace the value below with the Telegram token you receive from @BotFather
 const token = '8438692443:AAHQjt2gfYRXmdsb_XW3wpBv1YpGH_bDQWw';
 
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, {polling: true});
+
+// Chart configuration
+const chartJSNodeCanvas = new ChartJSNodeCanvas({
+  width: 800,
+  height: 600,
+  backgroundColour: 'white'
+});
+
+// Chart generation functions
+async function generateBarChart(data, title = 'Biểu đồ cột') {
+  const configuration = {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: data.label || 'Dữ liệu',
+        data: data.values,
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.8)',
+          'rgba(54, 162, 235, 0.8)',
+          'rgba(255, 205, 86, 0.8)',
+          'rgba(75, 192, 192, 0.8)',
+          'rgba(153, 102, 255, 0.8)',
+          'rgba(255, 159, 64, 0.8)'
+        ],
+        borderColor: [
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 205, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 159, 64, 1)'
+        ],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: title,
+          font: { size: 18 }
+        },
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
+          }
+        },
+        x: {
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
+          }
+        }
+      }
+    }
+  };
+
+  return await chartJSNodeCanvas.renderToBuffer(configuration);
+}
+
+async function generatePieChart(data, title = 'Biểu đồ tròn') {
+  const configuration = {
+    type: 'pie',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: data.label || 'Dữ liệu',
+        data: data.values,
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.8)',
+          'rgba(54, 162, 235, 0.8)',
+          'rgba(255, 205, 86, 0.8)',
+          'rgba(75, 192, 192, 0.8)',
+          'rgba(153, 102, 255, 0.8)',
+          'rgba(255, 159, 64, 0.8)',
+          'rgba(199, 199, 199, 0.8)',
+          'rgba(83, 102, 255, 0.8)'
+        ],
+        borderColor: [
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 205, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 159, 64, 1)',
+          'rgba(199, 199, 199, 1)',
+          'rgba(83, 102, 255, 1)'
+        ],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: title,
+          font: { size: 18 }
+        },
+        legend: {
+          display: true,
+          position: 'right'
+        }
+      }
+    }
+  };
+
+  return await chartJSNodeCanvas.renderToBuffer(configuration);
+}
+
+async function generateLineChart(data, title = 'Biểu đồ đường') {
+  const configuration = {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: data.label || 'Dữ liệu',
+        data: data.values,
+        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: false,
+      plugins: {
+        title: {
+          display: true,
+          text: title,
+          font: { size: 18 }
+        },
+        legend: {
+          display: true,
+          position: 'top'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
+          }
+        },
+        x: {
+          grid: {
+            color: 'rgba(0, 0, 0, 0.1)'
+          }
+        }
+      }
+    }
+  };
+
+  return await chartJSNodeCanvas.renderToBuffer(configuration);
+}
 
 // Matches "/echo [whatever]"
 bot.onText(/\/echo (.+)/, (msg, match) => {
@@ -54,6 +220,176 @@ bot.onText(/\/weather (.+)/, async (msg, match) => {
       console.error('Lỗi khi gọi API:', error.message);
       bot.sendMessage(chatId, 'Đã có lỗi xảy ra khi lấy dữ liệu thời tiết.');
     }
+  }
+});
+
+// Chart command handlers
+bot.onText(/\/chart_bar (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  try {
+    const input = match[1];
+    const [title, ...dataStr] = input.split('|');
+
+    if (dataStr.length === 0) {
+      bot.sendMessage(chatId, '❌ Format: /chart_bar Tiêu đề|nhãn1:giá_trị1,nhãn2:giá_trị2,...\nVí dụ: /chart_bar Doanh số|T1:100,T2:150,T3:200');
+      return;
+    }
+
+    const pairs = dataStr[0].split(',');
+    const labels = [];
+    const values = [];
+
+    pairs.forEach(pair => {
+      const [label, value] = pair.split(':');
+      if (label && value && !isNaN(value)) {
+        labels.push(label.trim());
+        values.push(parseFloat(value));
+      }
+    });
+
+    if (labels.length === 0) {
+      bot.sendMessage(chatId, '❌ Không tìm thấy dữ liệu hợp lệ!');
+      return;
+    }
+
+    const chartData = {
+      labels: labels,
+      values: values,
+      label: 'Giá trị'
+    };
+
+    const chartBuffer = await generateBarChart(chartData, title.trim());
+
+    bot.sendPhoto(chatId, chartBuffer, {
+      caption: `📊 ${title.trim()}`
+    });
+
+  } catch (error) {
+    console.error('Lỗi tạo biểu đồ cột:', error);
+    bot.sendMessage(chatId, '❌ Có lỗi xảy ra khi tạo biểu đồ cột');
+  }
+});
+
+bot.onText(/\/chart_pie (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  try {
+    const input = match[1];
+    const [title, ...dataStr] = input.split('|');
+
+    if (dataStr.length === 0) {
+      bot.sendMessage(chatId, '❌ Format: /chart_pie Tiêu đề|nhãn1:giá_trị1,nhãn2:giá_trị2,...\nVí dụ: /chart_pie Thị phần|A:30,B:25,C:45');
+      return;
+    }
+
+    const pairs = dataStr[0].split(',');
+    const labels = [];
+    const values = [];
+
+    pairs.forEach(pair => {
+      const [label, value] = pair.split(':');
+      if (label && value && !isNaN(value)) {
+        labels.push(label.trim());
+        values.push(parseFloat(value));
+      }
+    });
+
+    if (labels.length === 0) {
+      bot.sendMessage(chatId, '❌ Không tìm thấy dữ liệu hợp lệ!');
+      return;
+    }
+
+    const chartData = {
+      labels: labels,
+      values: values,
+      label: 'Phần trăm'
+    };
+
+    const chartBuffer = await generatePieChart(chartData, title.trim());
+
+    bot.sendPhoto(chatId, chartBuffer, {
+      caption: `🥧 ${title.trim()}`
+    });
+
+  } catch (error) {
+    console.error('Lỗi tạo biểu đồ tròn:', error);
+    bot.sendMessage(chatId, '❌ Có lỗi xảy ra khi tạo biểu đồ tròn');
+  }
+});
+
+bot.onText(/\/chart_line (.+)/, async (msg, match) => {
+  const chatId = msg.chat.id;
+  try {
+    const input = match[1];
+    const [title, ...dataStr] = input.split('|');
+
+    if (dataStr.length === 0) {
+      bot.sendMessage(chatId, '❌ Format: /chart_line Tiêu đề|nhãn1:giá_trị1,nhãn2:giá_trị2,...\nVí dụ: /chart_line Tăng trưởng|Q1:10,Q2:15,Q3:12,Q4:20');
+      return;
+    }
+
+    const pairs = dataStr[0].split(',');
+    const labels = [];
+    const values = [];
+
+    pairs.forEach(pair => {
+      const [label, value] = pair.split(':');
+      if (label && value && !isNaN(value)) {
+        labels.push(label.trim());
+        values.push(parseFloat(value));
+      }
+    });
+
+    if (labels.length === 0) {
+      bot.sendMessage(chatId, '❌ Không tìm thấy dữ liệu hợp lệ!');
+      return;
+    }
+
+    const chartData = {
+      labels: labels,
+      values: values,
+      label: 'Giá trị'
+    };
+
+    const chartBuffer = await generateLineChart(chartData, title.trim());
+
+    bot.sendPhoto(chatId, chartBuffer, {
+      caption: `📈 ${title.trim()}`
+    });
+
+  } catch (error) {
+    console.error('Lỗi tạo biểu đồ đường:', error);
+    bot.sendMessage(chatId, '❌ Có lỗi xảy ra khi tạo biểu đồ đường');
+  }
+});
+
+// HRM statistics chart command
+bot.onText(/\/hrm_stats/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  try {
+    bot.sendMessage(chatId, '📊 Đang tạo biểu đồ thống kê HRM...');
+
+    const sampleData = {
+      labels: ['Đi làm đúng giờ', 'Đi muộn', 'Nghỉ có phép', 'Nghỉ không phép', 'Làm thêm giờ'],
+      values: [85, 10, 3, 2, 25],
+      label: 'Số ngày'
+    };
+
+    const chartBuffer = await generateBarChart(sampleData, 'Thống kê chấm công tháng này');
+
+    bot.sendPhoto(chatId, chartBuffer, {
+      caption: '📊 **Thống kê HRM tháng này**\n\n' +
+               '✅ Đi làm đúng giờ: 85 ngày\n' +
+               '⏰ Đi muộn: 10 ngày\n' +
+               '📋 Nghỉ có phép: 3 ngày\n' +
+               '❌ Nghỉ không phép: 2 ngày\n' +
+               '🕒 Làm thêm giờ: 25 ngày',
+      parse_mode: 'Markdown'
+    });
+
+  } catch (error) {
+    console.error('Lỗi tạo thống kê HRM:', error);
+    bot.sendMessage(chatId, '❌ Có lỗi xảy ra khi tạo thống kê HRM');
   }
 });
 
@@ -251,8 +587,9 @@ bot.onText(/\/start/, (msg) => {
     reply_markup: {
       keyboard: [
         ['👤 Profile', '🌤️ Thời tiết'],
-        ['📊 Báo cáo', '⚙️ Cài đặt'],
-        ['📞 Liên hệ', '❓ Trợ giúp']
+        ['📊 Báo cáo', '📈 Biểu đồ'],
+        ['⚙️ Cài đặt', '📞 Liên hệ'],
+        ['❓ Trợ giúp']
       ],
       resize_keyboard: true,
       one_time_keyboard: false
@@ -284,6 +621,20 @@ bot.on('message', (msg) => {
     case '📊 Báo cáo':
       bot.sendMessage(chatId, 'Chức năng báo cáo đang phát triển...');
       break;
+    case '📈 Biểu đồ':
+      const chartMenu = `📈 **Menu Biểu đồ:**\n\n` +
+                       `📊 \`/chart_bar Tiêu đề|nhãn1:giá_trị1,nhãn2:giá_trị2\`\n` +
+                       `   Tạo biểu đồ cột\n\n` +
+                       `🥧 \`/chart_pie Tiêu đề|nhãn1:giá_trị1,nhãn2:giá_trị2\`\n` +
+                       `   Tạo biểu đồ tròn\n\n` +
+                       `📈 \`/chart_line Tiêu đề|nhãn1:giá_trị1,nhãn2:giá_trị2\`\n` +
+                       `   Tạo biểu đồ đường\n\n` +
+                       `📊 \`/hrm_stats\`\n` +
+                       `   Xem thống kê HRM mẫu\n\n` +
+                       `**Ví dụ:**\n` +
+                       `\`/chart_bar Doanh số|T1:100,T2:150,T3:200\``;
+      bot.sendMessage(chatId, chartMenu, { parse_mode: 'Markdown' });
+      break;
     case '⚙️ Cài đặt':
       bot.sendMessage(chatId, 'Chức năng cài đặt đang phát triển...');
       break;
@@ -292,11 +643,16 @@ bot.on('message', (msg) => {
       break;
     case '❓ Trợ giúp':
       const helpText = `🤖 **Hướng dẫn sử dụng bot:**\n\n` +
-                      `📋 **Các lệnh:**\n` +
+                      `📋 **Các lệnh cơ bản:**\n` +
                       `/start - Hiển thị menu chính\n` +
                       `/profile - Xem thông tin cá nhân\n` +
                       `/weather [thành phố] - Xem thời tiết\n` +
-                      `/echo [tin nhắn] - Lặp lại tin nhắn`;
+                      `/echo [tin nhắn] - Lặp lại tin nhắn\n\n` +
+                      `📈 **Lệnh biểu đồ:**\n` +
+                      `/chart_bar - Tạo biểu đồ cột\n` +
+                      `/chart_pie - Tạo biểu đồ tròn\n` +
+                      `/chart_line - Tạo biểu đồ đường\n` +
+                      `/hrm_stats - Thống kê HRM`;
       bot.sendMessage(chatId, helpText, { parse_mode: 'Markdown' });
       break;
     default:
