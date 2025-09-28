@@ -9,6 +9,15 @@ const token = '8438692443:AAHQjt2gfYRXmdsb_XW3wpBv1YpGH_bDQWw';
 // Create a bot that uses 'polling' to fetch new updates
 const bot = new TelegramBot(token, {polling: true});
 
+// Handle polling errors
+bot.on('polling_error', (error) => {
+  console.log('Polling error:', error.message);
+  if (error.message.includes('409 Conflict')) {
+    console.log('⚠️  Another bot instance is running. Please stop all other instances first.');
+    process.exit(1);
+  }
+});
+
 // Chart configuration
 const chartJSNodeCanvas = new ChartJSNodeCanvas({
   width: 800,

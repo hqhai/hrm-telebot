@@ -1,0 +1,15 @@
+curl 'https://user-hrm.atlanticgroup.vn/api/v1/user/get-user-profile' \
+  -H 'accept: application/json, text/plain, */*' \
+  -H 'accept-language: vi-VN' \
+  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJVc2VyTmFtZSI6InF1YW5naGFpQGF0bGFudGljLmVkdS52biIsIkZ1bGxOYW1lIjoiSMOgIFF1YW5nIEjhuqNpIiwiRW1haWwiOiJxdWFuZ2hhaUBhdGxhbnRpYy5lZHUudm4iLCJVc2VySWQiOiJjNzhhOWUwYy1jODY5LTRmYTUtMWM0Ni0wOGRjYjEzZmVmZWQiLCJTdWIiOiJiYXNlV2ViQXBpU3ViamVjdCIsIkp0aSI6IjBhYWEwOTFhLTA5YjItNDFlNS04NWU5LTBlZTQyODczYTA3ZCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlVzZXIiLCJSb2xlcyI6IlVzZXIiLCJleHAiOjE3NTk0MTEyMDksImlzcyI6ImJhc2VXZWJBcGlJc3N1ZXIiLCJhdWQiOiJiYXNlV2ViQXBpQXVkaWVuY2UifQ.t0eHMWXrLEiWJ_6z_7O4gVXZWW_mtp2yBHcMTD_cIVc' \
+  -H 'content-type: application/json' \
+  -H 'origin: https://hrm.atlanticgroup.vn' \
+  -H 'priority: u=1, i' \
+  -H 'referer: https://hrm.atlanticgroup.vn/' \
+  -H 'sec-ch-ua: "Chromium";v="140", "Not=A?Brand";v="24", "Google Chrome";v="140"' \
+  -H 'sec-ch-ua-mobile: ?0' \
+  -H 'sec-ch-ua-platform: "Windows"' \
+  -H 'sec-fetch-dest: empty' \
+  -H 'sec-fetch-mode: cors' \
+  -H 'sec-fetch-site: same-site' \
+  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36'
